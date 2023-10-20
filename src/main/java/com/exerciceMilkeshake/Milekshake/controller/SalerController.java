@@ -1,11 +1,11 @@
 package com.exerciceMilkeshake.Milekshake.controller;
 
-import com.exerciceMilkeshake.Milekshake.entity.Recipe;
 import com.exerciceMilkeshake.Milekshake.entity.Saler;
 import com.exerciceMilkeshake.Milekshake.repository.SalerRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class SalerController {
@@ -16,27 +16,27 @@ public class SalerController {
         this.repository = injectedRepository;
     }
 
-    // ici on injectera les vendeurs de bases déjà présents
-    @GetMapping("/allsalers")
-    public String init() {
-        repository.save(new Saler(1, "John", 30));
-        repository.save(new Saler(2, "Steve", 25));
-
-        return "Vendeurs présents!";
-    }
 
     //route qui récupère l'ensemble des vendeurs
     @GetMapping("/salers")
     public List<Saler> getAllSaler(){
         List<Saler> salers = repository.findAll();
-        return salers;
+        if (!salers.isEmpty()){
+            return salers;
+        }else {
+            throw new RuntimeException("There is nos salers");
+        }
     }
 
     // route qui récupère un vendeur en fonction de l'id
     @GetMapping("/saler/{id}")
     public Saler getSaler(@PathVariable int id){
-        Saler saler = repository.findById(id).get();
-        return saler;
+        Optional<Saler> saler = repository.findById(id);
+        if (saler.isPresent()){
+            return saler.get();
+        }else {
+            throw new RuntimeException("The saler number" +" " +id +" " +"doesn't exist!");
+        }
     }
 
     // route pour ajouter un vendeur
@@ -47,17 +47,26 @@ public class SalerController {
 
     // Route pour supprimer un vendeur
     @DeleteMapping("/saler/{id}")
-    public boolean deleteSaler(@PathVariable int id){
-        repository.deleteById(id);
-        return true;
+    public void deleteSaler(@PathVariable int id){
+        Optional<Saler> saler = repository.findById(id);
+        if (saler.isPresent()){
+            repository.deleteById(id);
+        }else {
+            throw new RuntimeException("The saler number" +" " +id +" " +"wasn't found!");
+        }
     }
 
     // route pour modifier un vendeur
     @PutMapping("/saler/update/{id}")
     public Saler updateSaler(@PathVariable int id, @RequestBody Saler saler){
-        Saler salerToUpdate = repository.findById(id).get();
-        salerToUpdate.setName(saler.getName());
-        salerToUpdate.setAge(saler.getAge());
-        return repository.save(salerToUpdate);
+        Optional<Saler> salerToUpdate = repository.findById(id);
+        if (salerToUpdate.isPresent()){
+            Saler salerUpdated = salerToUpdate.get();
+            salerUpdated.setName(saler.getName());
+            salerUpdated.setAge(saler.getAge());
+            return repository.save(salerUpdated);
+        }else {
+            throw new RuntimeException("The saler number" +" " +id +" " +"wasn't found!");
+        }
     }
 }

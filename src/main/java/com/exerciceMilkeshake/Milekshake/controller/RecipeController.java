@@ -5,6 +5,7 @@ import com.exerciceMilkeshake.Milekshake.repository.RecipeRepository;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 public class RecipeController {
@@ -15,29 +16,28 @@ public class RecipeController {
         this.repository = injectedRepository;
     }
 
-    // ici on injectera les recette de bases déjà présente
-    @GetMapping("/")
-    public String init() {
-        repository.save(new Recipe(1, "Milkshake fraise", 3, "fraise"));
-        repository.save(new Recipe(2, "Milkshake banane", 6, "banane"));
-        repository.save(new Recipe(3, "Milkshake poire", 7, "poire"));
-        repository.save(new Recipe(4, "Milkshake chocolat", 2, "chocolat"));
-
-        return "Recettes déjà présentes!";
-    }
 
     //route qui récupère l'ensemble des recettes
     @GetMapping("/recipes")
     public List <Recipe> getAllRecipe(){
         List<Recipe> recipes = repository.findAll();
-        return recipes;
+        if(!recipes.isEmpty()){
+            return recipes;
+        }else {
+            throw new RuntimeException("There is nos recipes");
+        }
     }
 
     // route qui récupère une recette en fonction de l'id
     @GetMapping("/recipe/{id}")
     public Recipe getRecipe(@PathVariable int id){
-        Recipe recipe = repository.findById(id).get();
-        return recipe;
+        Optional<Recipe> recipe = repository.findById(id);
+        if (recipe.isPresent()){
+            return recipe.get();
+        }else {
+            throw new RuntimeException("The recipe number" +" " +id +" " +"doesn't exist!");
+        }
+
     }
 
     // route pour ajouter une recette
@@ -48,18 +48,27 @@ public class RecipeController {
 
     // Route pour supprimer une recette
     @DeleteMapping("/recipe/{id}")
-    public boolean deleteRecipe(@PathVariable int id){
-        repository.deleteById(id);
-        return true;
+    public void deleteRecipe(@PathVariable int id){
+        Optional<Recipe> recipe = repository.findById(id);
+        if (recipe.isPresent()) {
+            repository.deleteById(id);
+        } else {
+            throw new RuntimeException("The recipe number" +" " +id +" " +"wasn't found!");
+        }
     }
 
     // route pour modifier une recette
     @PutMapping("/recipe/update/{id}")
     public Recipe updateRecipe(@PathVariable int id, @RequestBody Recipe recipe){
-        Recipe recipeToUpdate = repository.findById(id).get();
-        recipeToUpdate.setName(recipe.getName());
-        recipeToUpdate.setQuantity(recipe.getQuantity());
-        recipeToUpdate.setMainIngredient(recipe.getMainIngredient());
-        return repository.save(recipeToUpdate);
+        Optional <Recipe> recipeToUpdate = repository.findById(id);
+        if (recipeToUpdate.isPresent()) {
+            Recipe recipeUpdated = recipeToUpdate.get();
+            recipeUpdated.setName(recipe.getName());
+            recipeUpdated.setQuantity(recipe.getQuantity());
+            recipeUpdated.setMainIngredient(recipe.getMainIngredient());
+            return repository.save(recipeUpdated);
+        }else {
+            throw new RuntimeException("The recipe number" +" " +id +" " +"wasn't found!");
+        }
     }
 }
